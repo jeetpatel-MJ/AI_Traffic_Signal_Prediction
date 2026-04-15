@@ -1,0 +1,20 @@
+[
+    "traffic_volume",
+    "avg_vehicle_speed",
+    "vehicle_count_cars",
+    "vehicle_count_trucks",
+    "vehicle_count_bikes",
+    "temperature",
+    "humidity",
+    "hour",
+    "location_id_2",
+    "location_id_3",
+    "location_id_4",
+    "location_id_5",
+    "weather_condition_Foggy",
+    "weather_condition_Rainy",
+    "weather_condition_Sunny",
+    "weather_condition_Windy",
+    "signal_status_Red",
+    "signal_status_Yellow"
+]

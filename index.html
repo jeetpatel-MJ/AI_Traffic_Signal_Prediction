@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic Accident Prediction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-image: linear-gradient(rgba(240, 242, 245, 0.9), rgba(240, 242, 245, 0.9)), url('https://placehold.co/1920x1080/E0E7FF/000000?text=Traffic+Background');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .header {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1920x400/3B82F6/ffffff?text=Smart+Traffic+Management+System');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+            border-bottom: 4px solid #3b82f6;
+            border-radius: 0 0 1rem 1rem;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+        .header p {
+            font-size: 1.25rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .card {
+            border: none;
+            border-radius: 1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-0.5rem) scale(1.01);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        .card-title {
+            color: #1e40af;
+            font-weight: bold;
+        }
+
+        #prediction-result {
+            margin-top: 1.5rem;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 1s ease-out forwards;
+        }
+        
+        .loading {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="header">
+        <div class="max-w-6xl mx-auto flex justify-between items-center px-4">
+            <div aria-hidden="true"></div>
+            <div class="auth-buttons text-right flex flex-col md:flex-row items-center gap-2">
+                {% if session.get('user') %}
+                    <div class="text-sm mr-4">Signed in as <strong>{{ session.user }}</strong> ({{ session.role }})</div>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('dashboard') }}" class="bg-blue-400 hover:bg-blue-500 text-white font-semibold text-sm px-3 py-2 rounded shadow">Dashboard</a>
+                        <a href="{{ url_for('logout') }}" class="bg-red-500 hover:bg-red-600 text-white font-semibold text-sm px-3 py-2 rounded shadow">Logout</a>
+                    </div>
+                {% else %}
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('login') }}" class="bg-blue-400 hover:bg-blue-500 text-white font-semibold text-lg px-4 py-2 rounded shadow">Login</a>
+                        <a href="{{ url_for('register') }}" class="bg-green-400 hover:bg-green-500 text-white font-semibold text-lg px-4 py-2 rounded shadow">Register</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Position auth buttons at top-right of banner without overlapping background text */
+        .auth-buttons {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            z-index: 20;
+        }
+        @media (max-width: 640px) {
+            .auth-buttons { top: 0.5rem; right: 0.75rem; }
+        }
+    </style>
+
+    <div class="container mx-auto p-6 lg:p-12 fade-in">
+        <h2 class="text-center text-4xl font-bold mb-8 text-blue-700">Model Performance Visualizations</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="card bg-white shadow-lg p-6">
+                <h5 class="card-title text-xl mb-4">Confusion Matrix</h5>
+                <img src="/plots/confusion_matrix.png" class="img-fluid w-full rounded-lg" alt="Confusion Matrix">
+            </div>
+            <div class="card bg-white shadow-lg p-6">
+                <h5 class="card-title text-xl mb-4">Top 10 Feature Importances</h5>
+                <img src="/plots/feature_importance.png" class="img-fluid w-full rounded-lg" alt="Feature Importances">
+            </div>
+            <div class="card bg-white shadow-lg p-6 col-span-1 md:col-span-2 lg:col-span-1">
+                <h5 class="card-title text-xl mb-4">Performance Metrics</h5>
+                <canvas id="performanceChart" class="w-full"></canvas>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card bg-white shadow-lg p-6">
+                    <h5 class="card-title text-xl mb-4">Feature Correlation Heatmap</h5>
+                    <img src="/plots/correlation_heatmap.png" class="img-fluid w-full rounded-lg" alt="Correlation Heatmap">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-6 lg:p-12 fade-in">
+        <h2 class="text-center text-4xl font-bold mb-8 text-blue-700">Make a Prediction</h2>
+        <div class="card bg-white shadow-lg p-8">
+            <form id="predictionForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="mb-4">
+                            <label for="timestamp" class="block text-gray-700 font-medium mb-1">Timestamp</label>
+                            <input type="datetime-local" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="timestamp" name="timestamp" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="location_id" class="block text-gray-700 font-medium mb-1">Location ID</label>
+                            <select class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="location_id" name="location_id" required>
+                                <option value="">Select Location</option>
+                                <option value="1">Delhi, Connaught Place</option>
+                                <option value="2">Mumbai, Andheri</option>
+                                <option value="3">Bengaluru, Whitefield</option>
+                                <option value="4">Ahmedabad, Gota</option>
+                                <option value="5">Chennai, T. Nagar</option>
+                                <option value="6">Kolkata, Salt Lake</option>
+                                <option value="7">Hyderabad, Banjara Hills</option>
+                                <option value="8">Pune, Koregaon Park</option>
+                                <option value="9">Surat, Varachha</option>
+                                <option value="10">Jaipur, MI Road</option>
+                                <option value="11">Lucknow, Hazratganj</option>
+                                <option value="12">Kanpur, Swaroop Nagar</option>
+                                <option value="13">Nagpur, Sitabuldi</option>
+                                <option value="14">Indore, Rajwada</option>
+                                <option value="15">Bhopal, New Market</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="traffic_volume" class="block text-gray-700 font-medium mb-1">Traffic Volume</label>
+                            <input type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="traffic_volume" name="traffic_volume" min="0" max="1000" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="avg_vehicle_speed" class="block text-gray-700 font-medium mb-1">Average Vehicle Speed (km/h)</label>
+                            <input type="number" step="0.1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="avg_vehicle_speed" name="avg_vehicle_speed" min="0" max="100" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="vehicle_count_cars" class="block text-gray-700 font-medium mb-1">Vehicle Count - Cars</label>
+                            <input type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="vehicle_count_cars" name="vehicle_count_cars" min="0" max="1000" required>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-4">
+                            <label for="vehicle_count_trucks" class="block text-gray-700 font-medium mb-1">Vehicle Count - Trucks</label>
+                            <input type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="vehicle_count_trucks" name="vehicle_count_trucks" min="0" max="100" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="vehicle_count_bikes" class="block text-gray-700 font-medium mb-1">Vehicle Count - Bikes</label>
+                            <input type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="vehicle_count_bikes" name="vehicle_count_bikes" min="0" max="100" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="weather_condition" class="block text-gray-700 font-medium mb-1">Weather Condition</label>
+                            <select class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="weather_condition" name="weather_condition" required>
+                                <option value="">Select Weather</option>
+                                <option value="Cloudy">Cloudy</option>
+                                <option value="Foggy">Foggy</option>
+                                <option value="Rainy">Rainy</option>
+                                <option value="Sunny">Sunny</option>
+                                <option value="Windy">Windy</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="temperature" class="block text-gray-700 font-medium mb-1">Temperature (°C)</label>
+                            <input type="number" step="0.1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="temperature" name="temperature" min="0" max="40" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="humidity" class="block text-gray-700 font-medium mb-1">Humidity (%)</label>
+                            <input type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="humidity" name="humidity" min="0" max="100" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="signal_status" class="block text-gray-700 font-medium mb-1">Signal Status</label>
+                            <select class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="signal_status" name="signal_status" required>
+                                <option value="">Select Status</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Yellow">Yellow</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300">
+                    Predict Accident
+                </button>
+                {% if session.get('user') %}
+                <div class="flex gap-4 mt-4">
+                    <button id="startRealtime" type="button" class="w-1/2 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">Start Real-Time</button>
+                    <button id="stopRealtime" type="button" class="w-1/2 bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 hidden">Stop Real-Time</button>
+                </div>
+                {% else %}
+                <div class="mt-4 text-sm text-gray-600">Real-time predictions require signing in — <a href="{{ url_for('login') }}" class="text-blue-600 underline">Login</a></div>
+                {% endif %}
+            </form>
+            <div id="loading" class="mt-4 hidden justify-center items-center">
+                <div class="loading"></div>
+            </div>
+            <div id="prediction-result" class="shadow-md">
+                <div class="prediction-text text-center text-lg font-semibold mb-2"></div>
+                <img id="result-image" src="" alt="Prediction Image" class="w-full rounded-lg" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load Chart.js data
+            fetch('/plots/performance_metrics_chartjs.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const ctx = document.getElementById('performanceChart').getContext('2d');
+                    new Chart(ctx, data);
+                })
+                .catch(error => console.error('Error loading chart data:', error));
+
+            // Populate Location select from API
+            const locationSelect = document.getElementById('location_id');
+            function populateLocations() {
+                fetch('/api/locations')
+                    .then(r => r.json())
+                    .then(list => {
+                        if (!Array.isArray(list)) return;
+                        locationSelect.innerHTML = '<option value="">Select Location</option>' +
+                            list.map(item => `<option value="${item.id}">${item.label}</option>`).join('\n');
+                    })
+                    .catch(err => console.error('Failed to load locations', err));
+            }
+            populateLocations();
+
+            // Handle form submission
+            document.getElementById('predictionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const form = this;
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                const resultDiv = document.getElementById('prediction-result');
+                const textDiv = resultDiv.querySelector('.prediction-text');
+                const image = document.getElementById('result-image');
+                const loadingDiv = document.getElementById('loading');
+
+                resultDiv.style.opacity = '0';
+                loadingDiv.classList.remove('hidden');
+                loadingDiv.classList.add('flex');
+
+                // Convert timestamp to ISO string and numerical inputs
+                data.timestamp = new Date(data.timestamp).toISOString();
+                data.traffic_volume = parseInt(data.traffic_volume);
+                data.avg_vehicle_speed = parseFloat(data.avg_vehicle_speed);
+                data.vehicle_count_cars = parseInt(data.vehicle_count_cars);
+                data.vehicle_count_trucks = parseInt(data.vehicle_count_trucks);
+                data.vehicle_count_bikes = parseInt(data.vehicle_count_bikes);
+                data.temperature = parseFloat(data.temperature);
+                data.humidity = parseInt(data.humidity);
+                
+                fetch('/predict', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    loadingDiv.classList.add('hidden');
+                    loadingDiv.classList.remove('flex');
+                    if (response.status === 401) {
+                        // Not authenticated — redirect to login
+                        window.location = '/login';
+                        throw new Error('Authentication required');
+                    }
+                    if (!response.ok) {
+                        return response.json().then(error => Promise.reject(error));
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.error) {
+                        resultDiv.className = 'alert alert-danger shadow-md';
+                        textDiv.innerHTML = `Error: ${result.error}`;
+                        image.style.display = 'none';
+                    } else {
+                        const prediction = result.prediction === 1 ? 'Yes' : 'No';
+                        const probNo = (result.probability[0] * 100).toFixed(2);
+                        const probYes = (result.probability[1] * 100).toFixed(2);
+                        resultDiv.className = result.prediction === 1 ? 'alert alert-danger shadow-md' : 'alert alert-success shadow-md';
+                        textDiv.innerHTML = `Accident Reported: <strong>${prediction}</strong><br>Probability (No): ${probNo}%<br>Probability (Yes): ${probYes}%`;
+
+                        if (prediction === 'Yes') {
+                            image.src = 'https://placehold.co/400x200/FCA5A5/ffffff?text=Accident+Alert';
+                            image.alt = 'Accident Alert';
+                        } else {
+                            image.src = 'https://placehold.co/400x200/6EE7B7/ffffff?text=Road+Clear';
+                            image.alt = 'Road Clear';
+                        }
+                        image.style.display = 'block';
+                    }
+                    resultDiv.style.opacity = '1';
+                    resultDiv.style.transform = 'translateY(0)';
+                })
+                .catch(error => {
+                    loadingDiv.classList.add('hidden');
+                    loadingDiv.classList.remove('flex');
+                    resultDiv.className = 'alert alert-danger shadow-md';
+                    textDiv.innerHTML = `Error: ${error.message || JSON.stringify(error)}`;
+                    image.style.display = 'none';
+                    resultDiv.style.opacity = '1';
+                    resultDiv.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Real-time polling logic
+            let realtimeInterval = null;
+            const startBtn = document.getElementById('startRealtime');
+            const stopBtn = document.getElementById('stopRealtime');
+            const POLL_INTERVAL_MS = 2000; // 2 seconds
+
+            function collectFormData() {
+                const form = document.getElementById('predictionForm');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                data.timestamp = new Date(data.timestamp).toISOString();
+                data.traffic_volume = parseInt(data.traffic_volume);
+                data.avg_vehicle_speed = parseFloat(data.avg_vehicle_speed);
+                data.vehicle_count_cars = parseInt(data.vehicle_count_cars);
+                data.vehicle_count_trucks = parseInt(data.vehicle_count_trucks);
+                data.vehicle_count_bikes = parseInt(data.vehicle_count_bikes);
+                data.temperature = parseFloat(data.temperature);
+                data.humidity = parseInt(data.humidity);
+                return data;
+            }
+
+            function startRealtime() {
+                if (realtimeInterval) return;
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                realtimeInterval = setInterval(() => {
+                    const data = collectFormData();
+                    fetch('/predict', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    })
+                    .then(r => {
+                        if (r.status === 401) {
+                            window.location = '/login';
+                            throw new Error('Authentication required');
+                        }
+                        if (!r.ok) {
+                            return r.json().then(err => { console.error('Realtime error', err); });
+                        }
+                        return r.json();
+                    })
+                    .then(result => {
+                        if (!result) return;
+                        // reuse existing UI update logic by dispatching a custom event
+                        const event = new CustomEvent('realtime-prediction', { detail: result });
+                        document.dispatchEvent(event);
+                    })
+                    .catch(err => console.error('Realtime fetch error', err));
+                }, POLL_INTERVAL_MS);
+            }
+
+            function stopRealtime() {
+                if (!realtimeInterval) return;
+                clearInterval(realtimeInterval);
+                realtimeInterval = null;
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+            }
+
+            startBtn.addEventListener('click', startRealtime);
+            stopBtn.addEventListener('click', stopRealtime);
+
+            // Listen for realtime updates and update the UI similarly to form response
+            document.addEventListener('realtime-prediction', function(e) {
+                const result = e.detail;
+                const resultDiv = document.getElementById('prediction-result');
+                const textDiv = resultDiv.querySelector('.prediction-text');
+                const image = document.getElementById('result-image');
+                if (result.error) {
+                    resultDiv.className = 'alert alert-danger shadow-md';
+                    textDiv.innerHTML = `Error: ${result.error}`;
+                    image.style.display = 'none';
+                } else {
+                    const prediction = result.prediction === 1 ? 'Yes' : 'No';
+                    const probNo = (result.probability[0] * 100).toFixed(2);
+                    const probYes = (result.probability[1] * 100).toFixed(2);
+                    resultDiv.className = result.prediction === 1 ? 'alert alert-danger shadow-md' : 'alert alert-success shadow-md';
+                    textDiv.innerHTML = `Accident Reported: <strong>${prediction}</strong><br>Probability (No): ${probNo}%<br>Probability (Yes): ${probYes}%`;
+
+                    if (prediction === 'Yes') {
+                        image.src = 'https://placehold.co/400x200/FCA5A5/ffffff?text=Accident+Alert';
+                        image.alt = 'Accident Alert';
+                    } else {
+                        image.src = 'https://placehold.co/400x200/6EE7B7/ffffff?text=Road+Clear';
+                        image.alt = 'Road Clear';
+                    }
+                    image.style.display = 'block';
+                }
+                resultDiv.style.opacity = '1';
+                resultDiv.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>

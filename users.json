@@ -1,0 +1,22 @@
+{
+    "admin": {
+        "password": "scrypt:32768:8:1$vxYQXJQvGMbEcpyn$8c85167e8a14d79d8b4f6cae53f1ea12ca8fefc9ad851f57a933d8da9e276bf6b0c5e75c3116f842cb5a2b4e6795e171769d1dd931493b6e1b12a82225e24204",
+        "role": "admin"
+    },
+    "user": {
+        "password": "scrypt:32768:8:1$3H5JNWBY0vEk9fWk$5888be0848efa90645d97d88a640868b5886029229e6f62b99c26b3096442edf49a97d76a5bcbe68f51a968a32013a96101caaba7f7823bdfad52d2d7a9571f3",
+        "role": "user"
+    },
+    "jeet": {
+        "password": "scrypt:32768:8:1$wc3yHlgveLVfCz8x$c50e771c920027e9f4e8d55074f85bece404a1ce8f0cd7fe69bd6ffb70e869cd85e03d7c13e077d186048279f5ea94a536ff50bfda27767933b5e8aae6d86514",
+        "role": "user"
+    },
+    "jeet12": {
+        "password": "scrypt:32768:8:1$xa70cHh7CuRqyCij$7226952cbb0b8d3e114b9d35841a90a6491a89efc995ae21005da54bae10aab1831d4aea7e9d8265b20bd40814704c8b38658309d8242e41198e36673672bac5",
+        "role": "user"
+    },
+    "Jeet Patel": {
+        "password": "scrypt:32768:8:1$VLw4tChxLPfVoNUj$2c02802d535254e5ffb68d478e12c088118049ee72a266c6bcf0ce90f80a613b6c6db841c81784c40fd8bee200f5feb0d9ff90ff996334a4c6c5e23cb8df9f57",
+        "role": "user"
+    }
+}

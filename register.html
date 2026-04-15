@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Smart Traffic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold mb-6">Create Account</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="mb-4 text-red-600">{{ messages[0] }}</div>
+          {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block mb-1">Username</label>
+                <input name="username" required class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div class="mb-4">
+                <label class="block mb-1">Password</label>
+                <input name="password" type="password" required class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div class="flex items-center gap-4">
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Register</button>
+                <a href="/login" class="text-sm text-gray-600">Back to Login</a>
+            </div>
+        </form>
+        <p class="text-xs text-gray-500 mt-4">New accounts are created with user role. Admin account must be managed manually.</p>
+    </div>
+</body>
+</html>
